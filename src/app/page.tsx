@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Streamer } from "./streamer";
+import { Sidebar } from "./sidebar";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -84,10 +85,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <main className="bg-[#2c2c2a] p-10 rounded-lg shadow-md w-full max-w-md text-center">
+    <>
+    <div className="relative min-h-screen overflow-x-hidden">
+      <main className="min-h-screen flex items-center justify-center px-4 md:pr-80">
         {streamUrl ? (
-          <video controls src={streamUrl} className="mt-4 w-full rounded-md bg-black" />
+          <Streamer uploadStatus={uploadStatus} streamUrl={streamUrl} />
         ) : null}
         {!streamUrl ?
           <div
@@ -136,9 +138,10 @@ export default function Home() {
             >
               Load file content
             </button>
-
           </div> : null}
       </main>
     </div>
+    <Sidebar />
+  </>
   );
 }

@@ -1,24 +1,13 @@
 import { mkdir, writeFile } from "fs/promises";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { join } from "path";
 import { NextResponse } from "next/server";
 
-function getContentType(fileName: string, fallback: string) {
-  const extension = fileName.split(".").pop()?.toLowerCase();
+const execFileAsync = promisify(execFile);
 
-  switch (extension) {
-    case "mp4":
-      return "video/mp4";
-    case "webm":
-      return "video/webm";
-    case "mov":
-      return "video/quicktime";
-    case "mkv":
-      return "video/x-matroska";
-    case "avi":
-      return "video/x-msvideo";
-    default:
-      return fallback;
-  }
+function isVideo(fileName: string) {
+  return /\.(mp4|webm|mov|mkv|avi)$/i.test(fileName);
 }
 
 export async function POST(request: Request) {
@@ -33,19 +22,47 @@ export async function POST(request: Request) {
     const bytes = Buffer.from(await file.arrayBuffer());
     const safeFileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const uploadDir = join(process.cwd(), "uploads");
-    const contentType = getContentType(file.name, file.type || "application/octet-stream");
+    const thumbDir = join(uploadDir, "thumbnails");
 
     await mkdir(uploadDir, { recursive: true });
-    const filePath = join(uploadDir, safeFileName);
+    await mkdir(thumbDir, { recursive: true });
 
+    const filePath = join(uploadDir, safeFileName);
     await writeFile(filePath, bytes);
+
+    let thumbnailUrl = null;
+
+    if (isVideo(file.name)) {
+      const thumbPath = join(thumbDir, `${safeFileName}.png`);
+
+      try {
+        const ffmpegPath =
+            process.env.FFMPEG_PATH ||
+            "/opt/homebrew/bin/ffmpeg" ||
+            "/usr/local/bin/ffmpeg" ||
+            "ffmpeg";
+
+            await execFileAsync(ffmpegPath, [
+            "-y",
+            "-i", filePath,
+            "-frames:v", "1",
+            "-an",
+            "-vf", "scale=160:90",
+            thumbPath,
+            ]);
+        thumbnailUrl = `/api/uploads/thumbnails/${encodeURIComponent(`${safeFileName}.png`)}`;
+        console.log("Thumbnail generated at:", thumbPath);
+      } catch (err) {
+        console.error("Thumbnail generation failed:", err);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
       fileName: safeFileName,
       originalName: file.name,
       size: bytes.length,
-      contentType,
+      thumbnailUrl,
     });
   } catch (error) {
     console.error("Upload failed:", error);
