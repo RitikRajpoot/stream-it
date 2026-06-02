@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function Sidebar() {
+export function Sidebar({ setUploadedFileName, loadFileContent }: { setUploadedFileName: (url: string) => void; loadFileContent: () => void }) {
 
     const [files, setFiles] = useState<{ name: string; size: number; url: string; thumbnail: string }[]>([]);
 
@@ -24,7 +24,9 @@ export function Sidebar() {
       <h2 className="text-xl font-bold mb-4">Uploaded Files</h2>
       <ul className="space-y-2">
         {files.map((file, index) => (
-          <li key={index} className="bg-[#3a3a38] p-3 rounded-md">
+          <li key={index} className="bg-[#3a3a38] p-3 rounded-md" onClick={() => {
+            setUploadedFileName(file.name);
+          }}>
             <img src={file.thumbnail} alt="File Icon" className="w-6 h-6 inline-block mr-2" />
             <p className="font-medium">{file.name}</p>
             <p className="text-sm text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Streamer } from "./streamer";
 import { Sidebar } from "./sidebar";
 
@@ -63,7 +63,7 @@ export default function Home() {
     }
   };
 
-  const loadFileContent = async () => {
+  const loadFileContent = useCallback(async() => {
     if (!uploadedFileName) {
       setUploadStatus("Upload a file before fetching its content.");
       return;
@@ -82,7 +82,13 @@ export default function Home() {
       console.error(error);
       setUploadStatus("Could not fetch file content.");
     }
-  };
+  }, [uploadedFileName]);
+
+  useEffect(() => {
+    if (uploadedFileName) {
+      loadFileContent();
+    }
+  }, [uploadedFileName, loadFileContent]);
 
   return (
     <>
@@ -141,7 +147,7 @@ export default function Home() {
           </div> : null}
       </main>
     </div>
-    <Sidebar />
+    <Sidebar setUploadedFileName={setUploadedFileName}  loadFileContent={loadFileContent}/>
   </>
   );
 }
